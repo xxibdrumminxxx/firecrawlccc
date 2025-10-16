@@ -555,22 +555,33 @@ const waitForRefineOpts = {
   path: ["waitFor"],
 };
 const extractTransform = obj => {
+  const formats = Array.isArray(obj?.formats) ? obj.formats : [];
+  const hasJsonFormat = formats.some(
+    x => typeof x === "object" && x?.type === "json",
+  );
+  const hasChangeTrackingFormat = formats.some(format => {
+    if (typeof format === "string") {
+      return format === "changeTracking";
+    }
+    if (format && typeof format === "object") {
+      return format.type === "changeTracking";
+    }
+    return false;
+  });
+
   // Handle timeout
-  if (
-    obj.formats.find(x => typeof x === "object" && x.type === "json") &&
-    obj.timeout === 30000
-  ) {
+  if (hasJsonFormat && obj.timeout === 30000) {
     obj = { ...obj, timeout: 60000 };
   }
 
   if (
-    obj.formats?.includes("changeTracking") &&
+    hasChangeTrackingFormat &&
     (obj.waitFor === undefined || obj.waitFor < 5000)
   ) {
     obj = { ...obj, waitFor: 5000 };
   }
 
-  if (obj.formats?.includes("changeTracking") && obj.timeout === 30000) {
+  if (hasChangeTrackingFormat && obj.timeout === 30000) {
     obj = { ...obj, timeout: 60000 };
   }
 
