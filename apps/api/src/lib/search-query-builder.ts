@@ -90,19 +90,21 @@ export function buildSearchQuery(
     }
   }
 
-  // Build the OR filter for sites
-  let categoryFilter = "";
-  if (siteFilters.length > 0) {
-    categoryFilter = " (" + siteFilters.join(" OR ") + ")";
-  }
+  const hasSiteFilters = siteFilters.length > 0;
+  let finalQuery = baseQuery;
 
-  // Add filetype:pdf filter if PDF category is requested
-  if (hasPdfFilter) {
-    categoryFilter += " filetype:pdf";
+  if (hasSiteFilters && hasPdfFilter) {
+    const siteClause =
+      siteFilters.length > 1 ? `(${siteFilters.join(" OR ")})` : siteFilters[0];
+    finalQuery += ` (${siteClause} OR filetype:pdf)`;
+  } else if (hasSiteFilters) {
+    finalQuery += ` (${siteFilters.join(" OR ")})`;
+  } else if (hasPdfFilter) {
+    finalQuery += " filetype:pdf";
   }
 
   return {
-    query: baseQuery + categoryFilter,
+    query: finalQuery,
     categoryMap,
   };
 }
@@ -135,7 +137,7 @@ export function getCategoryFromUrl(
     // Check against category map for other sites
     for (const [site, category] of categoryMap.entries()) {
       if (site === "__pdf__") continue; // Skip the special PDF marker
-      
+
       if (
         hostname === site.toLowerCase() ||
         hostname.endsWith("." + site.toLowerCase())
